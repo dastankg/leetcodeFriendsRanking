@@ -6,6 +6,7 @@ from lexicon.lexicon import LEXICON
 from models.base import conn
 from FSM.fsm import FSMFillForm
 from aiogram.fsm.state import default_state
+import requests
 
 router = Router()
 
@@ -25,11 +26,9 @@ async def welcome(message: Message):
         )
 
         cur.close()
-        conn.close()
+
     else:
         await message.answer(text='Good!')
-
-
 
 
 @router.message(Command(commands='help'), StateFilter(default_state))
@@ -43,9 +42,19 @@ async def fillform(message: Message, state: FSMContext):
     await state.set_state(FSMFillForm.fill_name)
 
 
-@router.message(StateFilter(FSMFillForm.fill_name), F.text)
+@router.message(StateFilter(FSMFillForm.fill_name))
 async def fill_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
-    tmp = await state.get_data()
-    print(tmp)
-    await state.clear()
+    nick = await state.get_data()
+    url = f"https://leetcode-api-faisalshohag.vercel.app/{nick['name']}"
+    response = requests.get(url)
+    if 'errors' in response.json():
+        await message.answer(text='Пожалуйста, введите корректное имя')
+    else:
+
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (user_id, login) VALUES (%s, %s)", (message.from_user.id, message.text))
+        conn.commit()
+        cur.close()
+        await message.answer(text='True')
+        await state.clear()

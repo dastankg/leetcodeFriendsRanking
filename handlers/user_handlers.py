@@ -20,8 +20,7 @@ async def welcome(message: Message):
 
     if cur.rowcount == 0:
         await message.answer(
-            text='Чтобы перейти к заполнению анкеты - '
-                 'отправьте команду /fillform'
+            text=LEXICON['fillform']
         )
 
         cur.close()
@@ -38,21 +37,19 @@ async def help(message: Message):
 
 @router.message(Command(commands='fillform'), StateFilter(default_state))
 async def fillform(message: Message, state: FSMContext):
-    await message.answer(text='Пожалуйста, введите ваш ник в LeetCode\n Или команду /cancel чтоб выйти')
+    await message.answer(text=LEXICON['enter_friend_username'])
     await state.set_state(FSMFillForm.fill_name)
 
 
 @router.message(Command(commands='cancel'), StateFilter(default_state))
 async def cancel(message: Message):
-    await message.answer(text='Отменять нечего. Вы вне машины состояний\n\n'
-                              'Чтобы перейти к заполнению анкеты - '
-                              'отправьте команду /fillform')
+    await message.answer(text=LEXICON['cancel_no_state'])
 
 
 @router.message(Command(commands='cancel'), ~StateFilter(default_state))
 async def process_cancel(message: Message, state: FSMContext):
     await message.answer(
-        text='Вы вышли из машины состояний'
+        text=LEXICON['cancel_in_state']
     )
     await state.clear()
 
@@ -65,7 +62,7 @@ async def fill_name(message: Message, state: FSMContext):
     url = f"https://leetcode-api-faisalshohag.vercel.app/{nick['name']}"
     response = requests.get(url)
     if 'errors' in response.json():
-        await message.answer(text='Пожалуйста, введите корректное имя')
+        await message.answer(text=LEXICON['invalid_username'])
     else:
 
         cur = conn.cursor()
@@ -129,11 +126,24 @@ async def rankByContest(message: Message):
     for i in range(len(rows)):
         lst.append([0, rows[i][1]])
     for i in range(len(lst)):
-        url = f"https://leetcode-api-faisalshohag.vercel.app/{lst[i][1]}"
-        response = requests.get(url)
+        username = lst[i][1]
+        url = "https://leetcode.com/graphql"
+        query = """
+           {
+             matchedUser(username: "%s") {
+               username
+               submitStats: submitStatsGlobal {
+                 acSubmissionNum {
+                   count
+                 }
+               }
+             }
+           }
+           """ % username
+        response = requests.post(url, json={'query': query})
 
         data = response.json()
-        totalSolved = data['totalSolved']
+        totalSolved = data['data']['matchedUser']['submitStats']['acSubmissionNum'][0]['count']
         lst[i][0] = totalSolved
 
     lst.sort(reverse=True)
@@ -165,11 +175,24 @@ async def rankByContest(message: Message):
     for i in range(len(rows)):
         lst.append([0, rows[i][1]])
     for i in range(len(lst)):
-        url = f"https://leetcode-api-faisalshohag.vercel.app/{lst[i][1]}"
-        response = requests.get(url)
+        username = lst[i][1]
+        url = "https://leetcode.com/graphql"
+        query = """
+                   {
+                     matchedUser(username: "%s") {
+                       username
+                       submitStats: submitStatsGlobal {
+                         acSubmissionNum {
+                           count
+                         }
+                       }
+                     }
+                   }
+                   """ % username
+        response = requests.post(url, json={'query': query})
 
         data = response.json()
-        totalSolved = data['easySolved']
+        totalSolved = data['data']['matchedUser']['submitStats']['acSubmissionNum'][1]['count']
         lst[i][0] = totalSolved
 
     lst.sort(reverse=True)
@@ -201,11 +224,24 @@ async def rankByContest(message: Message):
     for i in range(len(rows)):
         lst.append([0, rows[i][1]])
     for i in range(len(lst)):
-        url = f"https://leetcode-api-faisalshohag.vercel.app/{lst[i][1]}"
-        response = requests.get(url)
+        username = lst[i][1]
+        url = "https://leetcode.com/graphql"
+        query = """
+                           {
+                             matchedUser(username: "%s") {
+                               username
+                               submitStats: submitStatsGlobal {
+                                 acSubmissionNum {
+                                   count
+                                 }
+                               }
+                             }
+                           }
+                           """ % username
+        response = requests.post(url, json={'query': query})
 
         data = response.json()
-        totalSolved = data['mediumSolved']
+        totalSolved = data['data']['matchedUser']['submitStats']['acSubmissionNum'][2]['count']
         lst[i][0] = totalSolved
 
     lst.sort(reverse=True)
@@ -237,11 +273,24 @@ async def rankByContest(message: Message):
     for i in range(len(rows)):
         lst.append([0, rows[i][1]])
     for i in range(len(lst)):
-        url = f"https://leetcode-api-faisalshohag.vercel.app/{lst[i][1]}"
-        response = requests.get(url)
+        username = lst[i][1]
+        url = "https://leetcode.com/graphql"
+        query = """
+                                   {
+                                     matchedUser(username: "%s") {
+                                       username
+                                       submitStats: submitStatsGlobal {
+                                         acSubmissionNum {
+                                           count
+                                         }
+                                       }
+                                     }
+                                   }
+                                   """ % username
+        response = requests.post(url, json={'query': query})
 
         data = response.json()
-        totalSolved = data['hardSolved']
+        totalSolved = data['data']['matchedUser']['submitStats']['acSubmissionNum'][3]['count']
         lst[i][0] = totalSolved
 
     lst.sort(reverse=True)
@@ -261,7 +310,7 @@ async def rankByContest(message: Message):
 
 @router.message(Command(commands='addFriends'), StateFilter(default_state))
 async def addFriends(message: Message, state: FSMContext):
-    await message.answer(text='Пожалуйста, введите ваше друга\n Или /cancel для отмены')
+    await message.answer(text=LEXICON['enter_friend_username'])
     await state.set_state(FSMFillForm.fill_friends)
 
 
@@ -281,18 +330,18 @@ async def fill_friends(message: Message, state: FSMContext):
     url = f"https://leetcode-api-faisalshohag.vercel.app/{nick['name']}"
     response = requests.get(url)
     if 'errors' in response.json():
-        await message.answer(text='Пожалуйста, введите корректное имя')
+        await message.answer(text=LEXICON['invalid_username'])
     else:
         cur.execute("INSERT INTO friends (user_name, id) VALUES (%s, %s)", (nick['name'], id))
         conn.commit()
-        await message.answer(text='success')
+        await message.answer(text=LEXICON['friend_added'])
         await message.answer(text=LEXICON['/help'])
         await state.clear()
 
 
 @router.message(Command(commands='deleteFriends'), StateFilter(default_state))
 async def deleteFriends(message: Message, state: FSMContext):
-    await message.answer(text='Пожалуйста, введите ваше друга\n Или /cancel для отмены')
+    await message.answer(text=LEXICON['fillform_prompt'])
     await state.set_state(FSMFillForm.delete_friends)
 
 
@@ -308,5 +357,5 @@ async def delete_friends(message: Message, state: FSMContext):
     values = (id, nick['name'])
     cur.execute(query, values)
     conn.commit()
-    await message.answer('Accepted')
+    await message.answer(text=LEXICON['friend_deleted'])
     await state.clear()

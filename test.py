@@ -1,11 +1,9 @@
 import requests
 username = "SatoruGodjo"
-nick = 'SatoruGodjo'
 url = "https://leetcode.com/graphql"
 query = """
    {
      matchedUser(username: "%s") {
-       username
        submitStats: submitStatsGlobal {
          acSubmissionNum {
            difficulty

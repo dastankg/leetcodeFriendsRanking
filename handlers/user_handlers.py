@@ -74,7 +74,7 @@ async def fill_name(message: Message, state: FSMContext):
         await state.clear()
 
 
-@router.message(Command(commands='rankByContest'), StateFilter(default_state))
+@router.message(Command(commands='contestrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
     cur = conn.cursor()
     cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
@@ -123,7 +123,7 @@ async def rankByContest(message: Message):
     await message.answer(text=ans, parse_mode='MarkdownV2')
 
 
-@router.message(Command(commands='rankByTotalProblem'), StateFilter(default_state))
+@router.message(Command(commands='totalrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
     cur = conn.cursor()
     cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
@@ -171,11 +171,11 @@ async def rankByContest(message: Message):
         formatted_row = f"{j + 1:<3} | {lst[j][1]:<15} | {formatted_number}"
         ans += formatted_row + '\n'
 
-    ans += '```'  # Конец блока моноширинного текста
+    ans += '```'
     await message.answer(text=ans, parse_mode='MarkdownV2')
 
 
-@router.message(Command(commands='rankByEasyProblem'), StateFilter(default_state))
+@router.message(Command(commands='easyrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
     cur = conn.cursor()
     cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
@@ -223,11 +223,11 @@ async def rankByContest(message: Message):
         formatted_row = f"{j + 1:<3} | {lst[j][1]:<15} | {formatted_number}"
         ans += formatted_row + '\n'
 
-    ans += '```'  # Конец блока моноширинного текста
+    ans += '```'
     await message.answer(text=ans, parse_mode='MarkdownV2')
 
 
-@router.message(Command(commands='rankByMediumProblem'), StateFilter(default_state))
+@router.message(Command(commands='mediumrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
     cur = conn.cursor()
     cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
@@ -275,11 +275,11 @@ async def rankByContest(message: Message):
         formatted_row = f"{j + 1:<3} | {lst[j][1]:<15} | {formatted_number}"
         ans += formatted_row + '\n'
 
-    ans += '```'  # Конец блока моноширинного текста
+    ans += '```'
     await message.answer(text=ans, parse_mode='MarkdownV2')
 
 
-@router.message(Command(commands='rankByHardProblem'), StateFilter(default_state))
+@router.message(Command(commands='hardrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
     cur = conn.cursor()
     cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
@@ -327,11 +327,11 @@ async def rankByContest(message: Message):
         formatted_row = f"{j + 1:<3} | {lst[j][1]:<15} | {formatted_number}"
         ans += formatted_row + '\n'
 
-    ans += '```'  # Конец блока моноширинного текста
+    ans += '```'
     await message.answer(text=ans, parse_mode='MarkdownV2')
 
 
-@router.message(Command(commands='addFriends'), StateFilter(default_state))
+@router.message(Command(commands='addfriends'), StateFilter(default_state))
 async def addFriends(message: Message, state: FSMContext):
     await message.answer(text=LEXICON['enter_friend_username'])
     await state.set_state(FSMFillForm.fill_friends)
@@ -342,7 +342,6 @@ async def fill_friends(message: Message, state: FSMContext):
     id = message.from_user.id
     await state.update_data(name=message.text)
     nick = await state.get_data()
-    print(nick)
     url = "https://leetcode.com/graphql"
     query = """
                {
@@ -352,7 +351,6 @@ async def fill_friends(message: Message, state: FSMContext):
                }
                """ % nick['name']
     response = requests.post(url, json={'query': query})
-    print(response.json())
     if 'errors' in response.json():
         await message.answer(text=LEXICON['invalid_username'])
     else:
@@ -363,7 +361,7 @@ async def fill_friends(message: Message, state: FSMContext):
         await state.clear()
 
 
-@router.message(Command(commands='deleteFriends'), StateFilter(default_state))
+@router.message(Command(commands='deletefriends'), StateFilter(default_state))
 async def deleteFriends(message: Message, state: FSMContext):
     await message.answer(text=LEXICON['fillform_prompt'])
     await state.set_state(FSMFillForm.delete_friends)

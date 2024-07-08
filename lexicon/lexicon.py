@@ -34,3 +34,18 @@ LEXICON: dict[str, str] = {
     'fill_name_invalid': "Пожалуйста, введите корректное имя.",
     'fill_name_success': "Ваш ник успешно сохранен! ✅"
 }
+
+
+LEXICON_COMMANDS_RU: dict[str, str] = {
+    '/start': 'Начать',
+    '/help': 'Помощь',
+    '/contestrank': 'Рейтинг по контестам',
+    '/totalrank': 'Рейтинг по решенным задачам',
+    '/easyrank': 'Рейтинг по легким задачам',
+    '/mediumrank': 'Рейтинг по средним задачам',
+    '/hardrank': 'Рейтинг по сложным задачам',
+    '/addfriends': 'Добавить друга',
+    '/deletefriends': 'Удалить друга',
+    '/fillform': 'Заполнить анкету',
+    '/cancel': 'Отмена'
+}

@@ -3,3 +3,4 @@ venv/
 .idea
 id_rsa
 is_rsa.pub
+test.py

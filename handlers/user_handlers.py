@@ -6,30 +6,25 @@ from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from lexicon.lexicon import LEXICON
-from models.base import conn
+from models.base import Session, Users, Friends
 from FSM.fsm import FSMFillForm
 from aiogram.fsm.state import default_state
 import requests
 
 router = Router()
+session = Session()
 
 
 @router.message(CommandStart(), StateFilter(default_state))
 async def welcome(message: Message):
     await message.answer(LEXICON[message.text])
-    cur = conn.cursor()
 
-    cur.execute(f"SELECT * FROM users WHERE user_id={message.from_user.id}")
-
-    if cur.rowcount == 0:
+    if session.query(Users).filter(Users.user_id == message.from_user.id).first() is not None:
         await message.answer(
             text=LEXICON['fillform']
         )
-
-        cur.close()
-
     else:
-
+        #
         await message.answer(text=LEXICON['/help'])
 
 
@@ -67,27 +62,24 @@ async def fill_name(message: Message, state: FSMContext):
         await message.answer(text=LEXICON['invalid_username'])
     else:
 
-        cur = conn.cursor()
-        cur.execute("INSERT INTO users (user_id, login) VALUES (%s, %s)", (message.from_user.id, message.text))
-        conn.commit()
+        new_user = Users(user_id=message.from_user.id, login=nick)
+        session.add(new_user)
+        session.commit()
         await message.answer(text=LEXICON['/help'])
         await state.clear()
 
 
 @router.message(Command(commands='contestrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
-    cur = conn.cursor()
-    cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
-    rows = cur.fetchall()
     id = message.from_user.id
-    login = rows[0][0]
+    user = session.query(Users).filter(Users.user_id == id).first()
+    login = user.login
     lst = [[0, login]]
-    cur.execute(f"SELECT * FROM friends WHERE id={id}")
-    rows = cur.fetchall()
-    for i in range(len(rows)):
-        lst.append([0, rows[i][1], 0, 0, 0])
+    friends = session.query(Friends).filter(Friends.id == id).all()
+    for i in friends:
+        lst.append([0, i.user_name, 0, 0, 0])
 
-    async def fetch_total_solved(session, username):
+    async def fetch_total_solved(sessions, username):
         url = "https://leetcode.com/graphql"
         query = """
                    {
@@ -96,14 +88,14 @@ async def rankByContest(message: Message):
                         }
                    }
                    """ % username
-        async with session.post(url, json={'query': query}) as response:
+        async with sessions.post(url, json={'query': query}) as response:
             data = await response.json()
             if data['data']['userContestRanking'] is None:
                 return 0
             return data['data']['userContestRanking']['rating']
 
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch_total_solved(session, user[1]) for user in lst]
+    async with aiohttp.ClientSession() as sessions:
+        tasks = [fetch_total_solved(sessions, user[1]) for user in lst]
         results = await asyncio.gather(*tasks)
         for i, totalSolved in enumerate(results):
             lst[i][0] = totalSolved
@@ -125,18 +117,15 @@ async def rankByContest(message: Message):
 
 @router.message(Command(commands='totalrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
-    cur = conn.cursor()
-    cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
-    rows = cur.fetchall()
     id = message.from_user.id
-    login = rows[0][0]
+    user = session.query(Users).filter(Users.user_id == id).first()
+    login = user.login
     lst = [[0, login]]
-    cur.execute(f"SELECT * FROM friends WHERE id={id}")
-    rows = cur.fetchall()
-    for i in range(len(rows)):
-        lst.append([0, rows[i][1]])
+    friends = session.query(Friends).filter(Friends.id == id).all()
+    for i in friends:
+        lst.append([0, i.user_name, 0, 0, 0])
 
-    async def fetch_total_solved(session, username):
+    async def fetch_total_solved(sessions, username):
         url = "https://leetcode.com/graphql"
         query = """
            {
@@ -150,12 +139,12 @@ async def rankByContest(message: Message):
              }
            }
            """ % username
-        async with session.post(url, json={'query': query}) as response:
+        async with sessions.post(url, json={'query': query}) as response:
             data = await response.json()
             return data['data']['matchedUser']['submitStats']['acSubmissionNum'][0]['count']
 
-    async with aiohttp.ClientSession() as session:
-        task = [fetch_total_solved(session, user[1]) for user in lst]
+    async with aiohttp.ClientSession() as sessions:
+        task = [fetch_total_solved(sessions, user[1]) for user in lst]
         result = await asyncio.gather(*task)
         for i, totalSolved in enumerate(result):
             lst[i][0] = totalSolved
@@ -177,18 +166,15 @@ async def rankByContest(message: Message):
 
 @router.message(Command(commands='easyrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
-    cur = conn.cursor()
-    cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
-    rows = cur.fetchall()
     id = message.from_user.id
-    login = rows[0][0]
+    user = session.query(Users).filter(Users.user_id == id).first()
+    login = user.login
     lst = [[0, login]]
-    cur.execute(f"SELECT * FROM friends WHERE id={id}")
-    rows = cur.fetchall()
-    for i in range(len(rows)):
-        lst.append([0, rows[i][1]])
+    friends = session.query(Friends).filter(Friends.id == id).all()
+    for i in friends:
+        lst.append([0, i.user_name, 0, 0, 0])
 
-    async def fetch_total_solved(session, username):
+    async def fetch_total_solved(sessions, username):
         url = "https://leetcode.com/graphql"
         query = """
               {
@@ -202,12 +188,12 @@ async def rankByContest(message: Message):
                 }
               }
               """ % username
-        async with session.post(url, json={'query': query}) as response:
+        async with sessions.post(url, json={'query': query}) as response:
             data = await response.json()
             return data['data']['matchedUser']['submitStats']['acSubmissionNum'][1]['count']
 
-    async with aiohttp.ClientSession() as session:
-        task = [fetch_total_solved(session, user[1]) for user in lst]
+    async with aiohttp.ClientSession() as sessions:
+        task = [fetch_total_solved(sessions, user[1]) for user in lst]
         result = await asyncio.gather(*task)
         for i, totalSolved in enumerate(result):
             lst[i][0] = totalSolved
@@ -229,18 +215,15 @@ async def rankByContest(message: Message):
 
 @router.message(Command(commands='mediumrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
-    cur = conn.cursor()
-    cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
-    rows = cur.fetchall()
     id = message.from_user.id
-    login = rows[0][0]
+    user = session.query(Users).filter(Users.user_id == id).first()
+    login = user.login
     lst = [[0, login]]
-    cur.execute(f"SELECT * FROM friends WHERE id={id}")
-    rows = cur.fetchall()
-    for i in range(len(rows)):
-        lst.append([0, rows[i][1]])
+    friends = session.query(Friends).filter(Friends.id == id).all()
+    for i in friends:
+        lst.append([0, i.user_name, 0, 0, 0])
 
-    async def fetch_total_solved(session, username):
+    async def fetch_total_solved(sessions, username):
         url = "https://leetcode.com/graphql"
         query = """
               {
@@ -254,12 +237,12 @@ async def rankByContest(message: Message):
                 }
               }
               """ % username
-        async with session.post(url, json={'query': query}) as response:
+        async with sessions.post(url, json={'query': query}) as response:
             data = await response.json()
             return data['data']['matchedUser']['submitStats']['acSubmissionNum'][2]['count']
 
-    async with aiohttp.ClientSession() as session:
-        task = [fetch_total_solved(session, user[1]) for user in lst]
+    async with aiohttp.ClientSession() as sessions:
+        task = [fetch_total_solved(sessions, user[1]) for user in lst]
         result = await asyncio.gather(*task)
         for i, totalSolved in enumerate(result):
             lst[i][0] = totalSolved
@@ -281,18 +264,15 @@ async def rankByContest(message: Message):
 
 @router.message(Command(commands='hardrank'), StateFilter(default_state))
 async def rankByContest(message: Message):
-    cur = conn.cursor()
-    cur.execute(f"SELECT login FROM users WHERE user_id={message.from_user.id}")
-    rows = cur.fetchall()
     id = message.from_user.id
-    login = rows[0][0]
+    user = session.query(Users).filter(Users.user_id == id).first()
+    login = user.login
     lst = [[0, login]]
-    cur.execute(f"SELECT * FROM friends WHERE id={id}")
-    rows = cur.fetchall()
-    for i in range(len(rows)):
-        lst.append([0, rows[i][1]])
+    friends = session.query(Friends).filter(Friends.id == id).all()
+    for i in friends:
+        lst.append([0, i.user_name, 0, 0, 0])
 
-    async def fetch_total_solved(session, username):
+    async def fetch_total_solved(sessions, username):
         url = "https://leetcode.com/graphql"
         query = """
               {
@@ -306,12 +286,12 @@ async def rankByContest(message: Message):
                 }
               }
               """ % username
-        async with session.post(url, json={'query': query}) as response:
+        async with sessions.post(url, json={'query': query}) as response:
             data = await response.json()
             return data['data']['matchedUser']['submitStats']['acSubmissionNum'][3]['count']
 
-    async with aiohttp.ClientSession() as session:
-        task = [fetch_total_solved(session, user[1]) for user in lst]
+    async with aiohttp.ClientSession() as sessions:
+        task = [fetch_total_solved(sessions, user[1]) for user in lst]
         result = await asyncio.gather(*task)
         for i, totalSolved in enumerate(result):
             lst[i][0] = totalSolved
@@ -354,9 +334,9 @@ async def fill_friends(message: Message, state: FSMContext):
     if 'errors' in response.json():
         await message.answer(text=LEXICON['invalid_username'])
     else:
-        cur = conn.cursor()
-        cur.execute("INSERT INTO friends (user_name, id) VALUES (%s, %s)", (nick['name'], id))
-        conn.commit()
+        user = Friends(user_name=nick['name'], id=id)
+        session.add(user)
+        session.commit()
         await message.answer(text=LEXICON['friend_added'])
         await state.clear()
 
@@ -369,13 +349,10 @@ async def deleteFriends(message: Message, state: FSMContext):
 
 @router.message(StateFilter(FSMFillForm.delete_friends))
 async def delete_friends(message: Message, state: FSMContext):
-    cur = conn.cursor()
     id = message.from_user.id
     await state.update_data(name=message.text)
     nick = await state.get_data()
-    query = "DELETE FROM friends WHERE id = %s AND user_name = %s"
-    values = (id, nick['name'])
-    cur.execute(query, values)
-    conn.commit()
+    session.query(Friends).filter(Friends.id == id, Friends.user_name == nick['name']).delete()
+    session.commit()
     await message.answer(text=LEXICON['friend_deleted'])
     await state.clear()

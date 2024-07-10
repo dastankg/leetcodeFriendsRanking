@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from config.config_file import load_config, Config
 
 config: Config = load_config()
-conn_string = (f"postgresql://{config.db.db_username}:{config.db.db_password}@{config.db.db_host}/{config.db.database}")
+conn_string = f"postgresql://{config.db.db_username}:{config.db.db_password}@{config.db.db_host}/{config.db.database}"
 engine = create_engine(conn_string)
 Base = declarative_base()
 

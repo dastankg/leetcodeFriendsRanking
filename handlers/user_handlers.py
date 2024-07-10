@@ -102,7 +102,7 @@ async def rankByContest(message: Message):
 
     lst.sort(reverse=True)
     ans = '```\n'
-    ans += f"{'№':<3} | {'Имя':<15} | {'totalSolved':<15}\n"
+    ans += f"{'№':<3} | {'Имя':<15} | {'Rank':<15}\n"
     ans += '-' * 30 + '\n'
 
     for j in range(len(lst)):
@@ -115,8 +115,15 @@ async def rankByContest(message: Message):
     await message.answer(text=ans, parse_mode='MarkdownV2')
 
 
-@router.message(Command(commands='totalrank'), StateFilter(default_state))
+@router.message(F.text.endswith('rank'), StateFilter(default_state))
 async def rankByContest(message: Message):
+    prefix = message.text.split('rank')[0][1::]
+    d = {
+        'total': 0,
+        'easy': 1,
+        'medium': 2,
+        'hard': 3
+    }
     id = message.from_user.id
     user = session.query(Users).filter(Users.user_id == id).first()
     login = user.login
@@ -141,7 +148,7 @@ async def rankByContest(message: Message):
            """ % username
         async with sessions.post(url, json={'query': query}) as response:
             data = await response.json()
-            return data['data']['matchedUser']['submitStats']['acSubmissionNum'][0]['count']
+            return data['data']['matchedUser']['submitStats']['acSubmissionNum'][d[prefix]]['count']
 
     async with aiohttp.ClientSession() as sessions:
         task = [fetch_total_solved(sessions, user[1]) for user in lst]
@@ -151,7 +158,7 @@ async def rankByContest(message: Message):
 
     lst.sort(reverse=True)
     ans = '```\n'
-    ans += f"{'№':<3} | {'Имя':<15} | {'totalSolved':<15}\n"
+    ans += f"{'№':<3} | {'Имя':<15} | {prefix:<15}\n"
     ans += '-' * 30 + '\n'
 
     for j in range(len(lst)):
@@ -162,154 +169,6 @@ async def rankByContest(message: Message):
 
     ans += '```'
     await message.answer(text=ans, parse_mode='MarkdownV2')
-
-
-@router.message(Command(commands='easyrank'), StateFilter(default_state))
-async def rankByContest(message: Message):
-    id = message.from_user.id
-    user = session.query(Users).filter(Users.user_id == id).first()
-    login = user.login
-    lst = [[0, login]]
-    friends = session.query(Friends).filter(Friends.id == id).all()
-    for i in friends:
-        lst.append([0, i.user_name, 0, 0, 0])
-
-    async def fetch_total_solved(sessions, username):
-        url = "https://leetcode.com/graphql"
-        query = """
-              {
-                matchedUser(username: "%s") {
-                  username
-                  submitStats: submitStatsGlobal {
-                    acSubmissionNum {
-                      count
-                    }
-                  }
-                }
-              }
-              """ % username
-        async with sessions.post(url, json={'query': query}) as response:
-            data = await response.json()
-            return data['data']['matchedUser']['submitStats']['acSubmissionNum'][1]['count']
-
-    async with aiohttp.ClientSession() as sessions:
-        task = [fetch_total_solved(sessions, user[1]) for user in lst]
-        result = await asyncio.gather(*task)
-        for i, totalSolved in enumerate(result):
-            lst[i][0] = totalSolved
-
-    lst.sort(reverse=True)
-    ans = '```\n'
-    ans += f"{'№':<3} | {'Имя':<15} | {'easySolved':<15}\n"
-    ans += '-' * 30 + '\n'
-
-    for j in range(len(lst)):
-        formatted_number = round(lst[j][0])
-
-        formatted_row = f"{j + 1:<3} | {lst[j][1]:<15} | {formatted_number}"
-        ans += formatted_row + '\n'
-
-    ans += '```'
-    await message.answer(text=ans, parse_mode='MarkdownV2')
-
-
-@router.message(Command(commands='mediumrank'), StateFilter(default_state))
-async def rankByContest(message: Message):
-    id = message.from_user.id
-    user = session.query(Users).filter(Users.user_id == id).first()
-    login = user.login
-    lst = [[0, login]]
-    friends = session.query(Friends).filter(Friends.id == id).all()
-    for i in friends:
-        lst.append([0, i.user_name, 0, 0, 0])
-
-    async def fetch_total_solved(sessions, username):
-        url = "https://leetcode.com/graphql"
-        query = """
-              {
-                matchedUser(username: "%s") {
-                  username
-                  submitStats: submitStatsGlobal {
-                    acSubmissionNum {
-                      count
-                    }
-                  }
-                }
-              }
-              """ % username
-        async with sessions.post(url, json={'query': query}) as response:
-            data = await response.json()
-            return data['data']['matchedUser']['submitStats']['acSubmissionNum'][2]['count']
-
-    async with aiohttp.ClientSession() as sessions:
-        task = [fetch_total_solved(sessions, user[1]) for user in lst]
-        result = await asyncio.gather(*task)
-        for i, totalSolved in enumerate(result):
-            lst[i][0] = totalSolved
-
-    lst.sort(reverse=True)
-    ans = '```\n'
-    ans += f"{'№':<3} | {'Имя':<15} | {'mediumSolved':<15}\n"
-    ans += '-' * 30 + '\n'
-
-    for j in range(len(lst)):
-        formatted_number = round(lst[j][0])
-
-        formatted_row = f"{j + 1:<3} | {lst[j][1]:<15} | {formatted_number}"
-        ans += formatted_row + '\n'
-
-    ans += '```'
-    await message.answer(text=ans, parse_mode='MarkdownV2')
-
-
-@router.message(Command(commands='hardrank'), StateFilter(default_state))
-async def rankByContest(message: Message):
-    id = message.from_user.id
-    user = session.query(Users).filter(Users.user_id == id).first()
-    login = user.login
-    lst = [[0, login]]
-    friends = session.query(Friends).filter(Friends.id == id).all()
-    for i in friends:
-        lst.append([0, i.user_name, 0, 0, 0])
-
-    async def fetch_total_solved(sessions, username):
-        url = "https://leetcode.com/graphql"
-        query = """
-              {
-                matchedUser(username: "%s") {
-                  username
-                  submitStats: submitStatsGlobal {
-                    acSubmissionNum {
-                      count
-                    }
-                  }
-                }
-              }
-              """ % username
-        async with sessions.post(url, json={'query': query}) as response:
-            data = await response.json()
-            return data['data']['matchedUser']['submitStats']['acSubmissionNum'][3]['count']
-
-    async with aiohttp.ClientSession() as sessions:
-        task = [fetch_total_solved(sessions, user[1]) for user in lst]
-        result = await asyncio.gather(*task)
-        for i, totalSolved in enumerate(result):
-            lst[i][0] = totalSolved
-
-    lst.sort(reverse=True)
-    ans = '```\n'
-    ans += f"{'№':<3} | {'Имя':<15} | {'hardSolved':<15}\n"
-    ans += '-' * 30 + '\n'
-
-    for j in range(len(lst)):
-        formatted_number = round(lst[j][0])
-
-        formatted_row = f"{j + 1:<3} | {lst[j][1]:<15} | {formatted_number}"
-        ans += formatted_row + '\n'
-
-    ans += '```'
-    await message.answer(text=ans, parse_mode='MarkdownV2')
-
 
 @router.message(Command(commands='addfriends'), StateFilter(default_state))
 async def addFriends(message: Message, state: FSMContext):

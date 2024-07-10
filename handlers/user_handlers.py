@@ -19,7 +19,8 @@ session = Session()
 async def welcome(message: Message):
     await message.answer(LEXICON[message.text])
 
-    if session.query(Users).filter(Users.user_id == message.from_user.id).first() is not None:
+    if session.query(Users).filter(Users.user_id == message.from_user.id).first() is None:
+
         await message.answer(
             text=LEXICON['fillform']
         )
@@ -35,7 +36,7 @@ async def help(message: Message):
 
 @router.message(Command(commands='fillform'), StateFilter(default_state))
 async def fillform(message: Message, state: FSMContext):
-    await message.answer(text=LEXICON['enter_friend_username'])
+    await message.answer(text=LEXICON['fillform_prompt'])
     await state.set_state(FSMFillForm.fill_name)
 
 
@@ -62,7 +63,7 @@ async def fill_name(message: Message, state: FSMContext):
         await message.answer(text=LEXICON['invalid_username'])
     else:
 
-        new_user = Users(user_id=message.from_user.id, login=nick)
+        new_user = Users(user_id=message.from_user.id, login=nick['name'])
         session.add(new_user)
         session.commit()
         await message.answer(text=LEXICON['/help'])
@@ -169,6 +170,9 @@ async def rankByContest(message: Message):
 
     ans += '```'
     await message.answer(text=ans, parse_mode='MarkdownV2')
+
+
+
 
 @router.message(Command(commands='addfriends'), StateFilter(default_state))
 async def addFriends(message: Message, state: FSMContext):

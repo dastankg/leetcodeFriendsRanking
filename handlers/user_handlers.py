@@ -185,28 +185,34 @@ async def fill_friends(message: Message, state: FSMContext):
     id = message.from_user.id
     await state.update_data(name=message.text)
     nick = await state.get_data()
-    url = "https://leetcode.com/graphql"
-    query = """
-               {
-                   userContestRanking(username:  "%s")  {
-                        rating
-                    }
-               }
-               """ % nick['name']
-    response = requests.post(url, json={'query': query})
-    if 'errors' in response.json():
-        await message.answer(text=LEXICON['invalid_username'])
+
+    # Check if the friend already exists
+    friend_exists = session.query(Friends).filter(Friends.id == id, Friends.user_name == nick['name']).first()
+    if friend_exists:
+        await message.answer(text="Ошибка: друг уже добавлен.")
     else:
-        user = Friends(user_name=nick['name'], id=id)
-        session.add(user)
-        session.commit()
-        await message.answer(text=LEXICON['friend_added'])
-        await state.clear()
+        url = "https://leetcode.com/graphql"
+        query = """
+                   {
+                       userContestRanking(username:  "%s")  {
+                            rating
+                        }
+                   }
+                   """ % nick['name']
+        response = requests.post(url, json={'query': query})
+        if 'errors' in response.json():
+            await message.answer(text=LEXICON['invalid_username'])
+        else:
+            user = Friends(user_name=nick['name'], id=id)
+            session.add(user)
+            session.commit()
+            await message.answer(text=LEXICON['friend_added'])
+            await state.clear()
 
 
 @router.message(Command(commands='deletefriends'), StateFilter(default_state))
 async def deleteFriends(message: Message, state: FSMContext):
-    await message.answer(text=LEXICON['fillform_prompt'])
+    await message.answer(text=LEXICON['enter_friend_username'])
     await state.set_state(FSMFillForm.delete_friends)
 
 
@@ -215,7 +221,15 @@ async def delete_friends(message: Message, state: FSMContext):
     id = message.from_user.id
     await state.update_data(name=message.text)
     nick = await state.get_data()
-    session.query(Friends).filter(Friends.id == id, Friends.user_name == nick['name']).delete()
-    session.commit()
-    await message.answer(text=LEXICON['friend_deleted'])
-    await state.clear()
+
+    # Check if the friend exists
+    friend_exists = session.query(Friends).filter(Friends.id == id, Friends.user_name == nick['name']).first()
+    if friend_exists:
+        # Perform the deletion
+        session.query(Friends).filter(Friends.id == id, Friends.user_name == nick['name']).delete()
+        session.commit()
+        await message.answer(text=LEXICON['friend_deleted'])
+        await state.clear()
+    else:
+        await message.answer(text=LEXICON['friend_deleted_error'])
+

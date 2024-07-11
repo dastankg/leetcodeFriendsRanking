@@ -6,10 +6,11 @@ from config.config_file import load_config, Config
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from handlers import other_handlers, user_handlers
-from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.storage.redis import RedisStorage, Redis
 from keyboards.main_menu import set_main_menu
 
-storage = MemoryStorage()
+redis = Redis(host='localhost')
+storage = storage = RedisStorage(redis=redis)
 logger = logging.getLogger(__name__)
 
 

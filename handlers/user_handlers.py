@@ -3,7 +3,7 @@ import asyncio
 import aiohttp
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart, StateFilter
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from lexicon.lexicon import LEXICON
 from models.base import Session, Users, Friends

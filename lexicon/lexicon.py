@@ -34,7 +34,10 @@ LEXICON: dict[str, str] = {
         "Или команду /cancel, чтобы выйти."
     ),
     'fill_name_invalid': "Пожалуйста, введите корректное имя.",
-    'fill_name_success': "Ваш ник успешно сохранен! ✅"
+    'fill_name_success': "Ваш ник успешно сохранен! ✅",
+
+    'forward': '>>',
+    'backward': '<<',
 }
 
 LEXICON_COMMANDS_RU: dict[str, str] = {

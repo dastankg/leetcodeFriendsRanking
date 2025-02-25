@@ -5,3 +5,7 @@ id_rsa
 is_rsa.pub
 test.py
 __pycache__
+Procfile
+__pycache__/
+*.py[cod]
+*$py.class
